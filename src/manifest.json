@@ -1,0 +1,28 @@
+{
+  "name": "想想手作",
+  "appid": "__UNI__YOUR_APP_ID",
+  "description": "拼豆创作工具 - 将创意转化为可触摸的艺术",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "h5": {
+    "title": "想想手作",
+    "router": {
+      "mode": "hash",
+      "base": "./"
+    },
+    "devServer": {
+      "port": 5173,
+      "https": false
+    }
+  },
+  "mp-weixin": {
+    "appid": "wxYourAppId",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true
+    },
+    "usingComponents": true
+  }
+}

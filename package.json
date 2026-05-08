@@ -1,0 +1,39 @@
+{
+  "name": "xiangxiang-crafts",
+  "version": "1.0.0",
+  "description": "想想手作 - 拼豆创作工具",
+  "scripts": {
+    "dev:mp-weixin": "uni",
+    "build:mp-weixin": "uni build",
+    "dev:h5": "uni -p h5",
+    "build:h5": "uni build -p h5",
+    "dev:app": "uni -p app",
+    "build:app": "uni build -p app",
+    "lint": "eslint . --ext .vue,.js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .vue,.js,.jsx,.ts,.tsx --fix"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-4010520250108001",
+    "@dcloudio/uni-components": "3.0.0-4010520250108001",
+    "@dcloudio/uni-h5": "3.0.0-4010520250108001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-4010520250108001",
+    "vue": "^3.4.21",
+    "pinia": "^2.1.7",
+    "js-priority-queue": "^0.1.5"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.8",
+    "@dcloudio/uni-automator": "3.0.0-4010520250108001",
+    "@dcloudio/uni-cli-shared": "3.0.0-4010520250108001",
+    "@dcloudio/uni-stacktracey": "3.0.0-4010520250108001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-4010520250108001",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.8",
+    "vue-tsc": "^2.0.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.23.0",
+    "@vue/eslint-config-typescript": "^12.0.0",
+    "sass": "^1.75.0"
+  }
+}

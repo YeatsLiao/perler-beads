@@ -1,0 +1,106 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "想想手作"
+      }
+    },
+    {
+      "path": "pages/create/index",
+      "style": {
+        "navigationBarTitleText": "创作中心",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/generate/index",
+      "style": {
+        "navigationBarTitleText": "图片生成",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/editor/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "编辑器"
+      }
+    },
+    {
+      "path": "pages/export/index",
+      "style": {
+        "navigationBarTitleText": "导出",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/works/index",
+      "style": {
+        "navigationBarTitleText": "我的作品",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "个人中心",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/work-detail/index",
+      "style": {
+        "navigationBarTitleText": "作品详情",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/search/index",
+      "style": {
+        "navigationBarTitleText": "搜索",
+        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarTextStyle": "black"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "想想手作",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#FFF8F0",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#8B7355",
+    "selectedColor": "#FF8C69",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "custom": true,
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/create/index",
+        "text": "创作"
+      },
+      {
+        "pagePath": "pages/works/index",
+        "text": "作品"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的"
+      }
+    ]
+  }
+}

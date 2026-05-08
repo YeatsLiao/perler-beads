@@ -1,0 +1,50 @@
+$color-primary: #FF8C69;
+$color-primary-light: #FFF0EB;
+$color-primary-dark: #E57555;
+$color-success: #7CB77C;
+$color-warning: #FFD384;
+$color-error: #FF7575;
+$color-info: #7AB8FF;
+
+$color-bg: #FFF8F0;
+$color-card: #FFFFFF;
+$color-border: #FFE8D9;
+$color-text: #4A3728;
+$color-text-secondary: #8B7355;
+$color-text-weak: #C4B5A0;
+
+$color-cream: #FFF8E7;
+$color-peach-pink: #FFB7C5;
+$color-sky-blue: #A8D8EA;
+$color-mint: #B8E0D2;
+$color-cream-yellow: #FFE4B5;
+$color-lavender: #E6D5E7;
+$color-peach-orange: #FFCBA4;
+$color-sakura-pink: #FFD6E0;
+$color-mint-blue: #B2DFDB;
+$color-lemon: #FFF3B0;
+
+$font-size-title: 32rpx;
+$font-size-heading: 28rpx;
+$font-size-body: 28rpx;
+$font-size-secondary: 24rpx;
+$font-size-small: 22rpx;
+
+$spacing-page: 24rpx;
+$spacing-card: 16rpx;
+$spacing-content: 16rpx;
+$spacing-padding: 24rpx;
+
+$radius-card: 20rpx;
+$radius-button: 16rpx;
+$radius-input: 16rpx;
+$radius-image: 12rpx;
+$radius-circle: 50%;
+
+$shadow-card: 0 4rpx 16rpx rgba(255, 140, 105, 0.08);
+$shadow-button: 0 6rpx 20rpx rgba(255, 140, 105, 0.25);
+$shadow-float: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+
+$gradient-primary: linear-gradient(135deg, #FF8C69 0%, #FFB7C5 100%);
+$gradient-warm: linear-gradient(135deg, #FFE4B5 0%, #FFCBA4 100%);
+$gradient-fresh: linear-gradient(135deg, #B8E0D2 0%, #A8D8EA 100%);

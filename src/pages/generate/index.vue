@@ -1,166 +1,98 @@
 <template>
   <view class="page">
-    <NavBar title="图片生成" />
-    
+    <NavBar title="照片转图纸" showBack />
+
     <scroll-view class="content" scroll-y>
-      <view class="upload-section">
-        <view 
-          class="upload-area"
-          @click="chooseImage"
-          @touchmove.stop
-        >
-          <view v-if="!imageSrc" class="upload-placeholder">
-            <text class="upload-icon">📷</text>
-            <text class="upload-text">点击上传图片</text>
-            <text class="upload-hint">支持 JPG、PNG 格式</text>
-          </view>
-          <image v-else class="preview-image" :src="imageSrc" mode="aspectFill" />
-        </view>
-        
-        <view v-if="imageSrc" class="upload-actions">
-          <view class="action-btn" @click="chooseImage">
-            <text>重新选择</text>
-          </view>
-          <view class="action-btn" @click="clearImage">
-            <text>清除图片</text>
-          </view>
+      <view class="upload-box" @click="chooseImage">
+        <image v-if="imageSrc" class="source-image" :src="imageSrc" mode="aspectFill" />
+        <view v-else class="upload-empty">
+          <text>＋</text>
+          <text>选择照片</text>
         </view>
       </view>
 
-      <view class="options-section">
-        <view class="section-title">参数设置</view>
-        
-        <view class="option-item">
-          <view class="option-label">像素大小</view>
-          <view class="option-control">
-            <slider 
-              v-model="pixelSize" 
-              :min="2" 
-              :max="30" 
-              :step="1"
-              activeColor="#FF6B6B"
-              backgroundColor="#E8E8E8"
-            />
-            <text class="option-value">{{ pixelSize }}px</text>
+      <view class="control-card">
+        <view class="size-row">
+          <view
+            v-for="size in sizes"
+            :key="size.label"
+            class="size-btn"
+            :class="{ active: gridWidth === size.width && gridHeight === size.height }"
+            @click="setSize(size.width, size.height)"
+          >
+            <text>{{ size.label }}</text>
+            <text>{{ size.width }}×{{ size.height }}</text>
           </view>
         </view>
 
-        <view class="option-item">
-          <view class="option-label">颜色数量</view>
-          <view class="option-control">
-            <slider 
-              v-model="colorCount" 
-              :min="4" 
-              :max="64" 
-              :step="4"
-              activeColor="#FF6B6B"
-              backgroundColor="#E8E8E8"
-            />
-            <text class="option-value">{{ colorCount }}色</text>
+        <view class="slider-row">
+          <view class="slider-head">
+            <text>颜色数量</text>
+            <text>{{ colorLimit }} 色</text>
           </view>
+          <slider v-model="colorLimit" :min="6" :max="36" :step="2" activeColor="#FF7A59" backgroundColor="#FFE8D9" />
         </view>
 
-        <view class="option-item">
-          <view class="option-label">亮度</view>
-          <view class="option-control">
-            <slider 
-              v-model="brightness" 
-              :min="-100" 
-              :max="100" 
-              :step="5"
-              activeColor="#FF6B6B"
-              backgroundColor="#E8E8E8"
-            />
-            <text class="option-value">{{ brightness > 0 ? '+' : '' }}{{ brightness }}</text>
-          </view>
-        </view>
-
-        <view class="option-item">
-          <view class="option-label">对比度</view>
-          <view class="option-control">
-            <slider 
-              v-model="contrast" 
-              :min="-100" 
-              :max="100" 
-              :step="5"
-              activeColor="#FF6B6B"
-              backgroundColor="#E8E8E8"
-            />
-            <text class="option-value">{{ contrast > 0 ? '+' : '' }}{{ contrast }}</text>
-          </view>
-        </view>
-
-        <view class="option-item">
-          <view class="option-label">饱和度</view>
-          <view class="option-control">
-            <slider 
-              v-model="saturation" 
-              :min="-100" 
-              :max="100" 
-              :step="5"
-              activeColor="#FF6B6B"
-              backgroundColor="#E8E8E8"
-            />
-            <text class="option-value">{{ saturation > 0 ? '+' : '' }}{{ saturation }}</text>
-          </view>
-        </view>
-
-        <view class="option-item">
-          <view class="option-label">色板选择</view>
-          <view class="palette-selector">
-            <view 
-              v-for="palette in palettes" 
-              :key="palette.id"
-              class="palette-item"
-              :class="{ active: selectedPalette === palette.id }"
-              @click="selectedPalette = palette.id"
-            >
-              <text class="palette-name">{{ palette.brandCn }}</text>
-              <text class="palette-count">{{ palette.colors.length }}色</text>
-            </view>
-          </view>
+        <view class="palette-row">
+          <view
+            v-for="palette in palettes"
+            :key="palette.id"
+            class="palette-btn"
+            :class="{ active: selectedPalette === palette.id }"
+            @click="selectedPalette = palette.id"
+          >{{ palette.brandCn }}</view>
         </view>
       </view>
 
-      <view class="preview-section">
-        <view class="section-title">预览对比</view>
-        <view class="compare-container">
-          <view class="compare-panel">
-            <text class="panel-label">原图</text>
-            <image v-if="imageSrc" class="compare-image" :src="imageSrc" mode="aspectFit" />
-          </view>
-          <view class="compare-panel">
-            <text class="panel-label">像素化效果</text>
-            <canvas canvas-id="previewCanvas" class="compare-canvas"></canvas>
-          </view>
+      <view class="preview-card">
+        <view class="preview-title">
+          <text>预览</text>
+          <text>{{ generatedPattern.length ? `${gridWidth}×${gridHeight}` : '未生成' }}</text>
         </view>
+        <PixelPreview :pattern="previewPattern" background="#FFFDF9" />
       </view>
 
-      <view class="action-section">
-        <Button type="primary" @click="generate">生成图纸</Button>
+      <view class="actions">
+        <Button type="secondary" @click="generatePreview">生成预览</Button>
+        <Button type="primary" @click="openEditor">进入编辑</Button>
       </view>
     </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref } from 'vue';
 import NavBar from '@/components/NavBar.vue';
 import Button from '@/components/Button.vue';
+import PixelPreview from '@/components/PixelPreview.vue';
 import { PALETTES } from '@/constants/palettes';
+import { useEditorStore } from '@/stores/editor';
+import { createCheckerPattern, demoWorks, type PixelPattern } from '@/utils/demoWorks';
+import { PixelProcessor } from '@/utils/pixelProcessor';
+import { getPlatformAdapter } from '@/utils/platformAdapter';
 
+const store = useEditorStore();
 const imageSrc = ref('');
-const pixelSize = ref(10);
-const colorCount = ref(32);
-const brightness = ref(0);
-const contrast = ref(0);
-const saturation = ref(0);
+const gridWidth = ref(29);
+const gridHeight = ref(29);
+const colorLimit = ref(18);
 const selectedPalette = ref(PALETTES[0].id);
-
+const generatedPattern = ref<PixelPattern>([]);
 const palettes = PALETTES;
 
-onMounted(() => {
-});
+const sizes = [
+  { label: '方板', width: 29, height: 29 },
+  { label: '横板', width: 29, height: 19 },
+  { label: '大图', width: 32, height: 32 }
+];
+
+const activePalette = computed(() => PALETTES.find(item => item.id === selectedPalette.value) || PALETTES[0]);
+const previewPattern = computed(() => generatedPattern.value.length ? generatedPattern.value : demoWorks[1].pattern);
+
+function setSize(width: number, height: number) {
+  gridWidth.value = width;
+  gridHeight.value = height;
+}
 
 function chooseImage() {
   uni.chooseImage({
@@ -169,53 +101,41 @@ function chooseImage() {
     sourceType: ['album', 'camera'],
     success: (res) => {
       imageSrc.value = res.tempFilePaths[0];
-      updatePreview();
+      generatePreview();
     }
   });
 }
 
-function clearImage() {
-  imageSrc.value = '';
-}
-
-function updatePreview() {
-  if (!imageSrc.value) return;
-  
-  const ctx = uni.createCanvasContext('previewCanvas');
-  
-  uni.getImageInfo({
-    src: imageSrc.value,
-    success: (info) => {
-      const size = 200;
-      let width = info.width;
-      let height = info.height;
-      
-      if (width > height) {
-        height = (height / width) * size;
-        width = size;
-      } else {
-        width = (width / height) * size;
-        height = size;
-      }
-      
-      ctx.drawImage(imageSrc.value, 0, 0, width, height);
-      ctx.draw();
-    }
-  });
-}
-
-function generate() {
+async function generatePreview() {
   if (!imageSrc.value) {
-    uni.showToast({ title: '请先上传图片', icon: 'none' });
+    generatedPattern.value = createCheckerPattern(gridWidth.value > 29 ? 16 : 12);
+    uni.showToast({ title: '已生成示例', icon: 'none' });
     return;
   }
-  
-  uni.showLoading({ title: '生成中...' });
-  
-  setTimeout(() => {
-    uni.hideLoading();
-    uni.navigateTo({ url: '/pages/editor/index' });
-  }, 1500);
+
+  try {
+    generatedPattern.value = await pixelateImage(imageSrc.value);
+  } catch (_) {
+    generatedPattern.value = createCheckerPattern(12);
+    uni.showToast({ title: '预览失败，已使用示例', icon: 'none' });
+  }
+}
+
+function openEditor() {
+  if (!generatedPattern.value.length) {
+    generatedPattern.value = createCheckerPattern(12);
+  }
+  store.setPalette(activePalette.value);
+  store.loadPixels(generatedPattern.value);
+  uni.navigateTo({ url: '/pages/editor/index?source=generate' });
+}
+
+async function pixelateImage(src: string): Promise<PixelPattern> {
+  const adapter = getPlatformAdapter();
+  const imageData = await adapter.getImageData(src, gridWidth.value, gridHeight.value);
+  const limitedPalette = activePalette.value.colors.slice(0, colorLimit.value);
+  const processor = new PixelProcessor(limitedPalette);
+  return processor.pixelate(imageData, gridWidth.value, gridHeight.value, 1);
 }
 </script>
 
@@ -227,180 +147,128 @@ function generate() {
 
 .content {
   height: calc(100vh - 112rpx);
-  padding: 24rpx;
-  padding-bottom: 120rpx;
+  padding: 136rpx 24rpx 132rpx;
 }
 
-.upload-section {
-  margin-bottom: 32rpx;
-}
-
-.upload-area {
-  width: 100%;
-  height: 400rpx;
-  background: $color-card;
-  border-radius: $radius-card;
+.upload-box {
+  height: 360rpx;
+  border-radius: 28rpx;
+  background: #FFFFFF;
   border: 4rpx dashed $color-border;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  margin-bottom: 22rpx;
 }
 
-.upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.upload-icon {
-  font-size: 80rpx;
-}
-
-.upload-text {
-  font-size: 30rpx;
-  color: $color-text;
-}
-
-.upload-hint {
-  font-size: 24rpx;
-  color: $color-text-weak;
-}
-
-.preview-image {
+.source-image {
   width: 100%;
   height: 100%;
 }
 
-.upload-actions {
-  display: flex;
-  justify-content: center;
-  gap: 32rpx;
-  margin-top: 20rpx;
-}
-
-.action-btn {
-  padding: 16rpx 40rpx;
-  background: $color-card;
-  border-radius: $radius-button;
-  font-size: 26rpx;
-  color: $color-text-secondary;
-  box-shadow: $shadow-card;
-  
-  &:active {
-    transform: scale(0.98);
-  }
-}
-
-.options-section {
-  background: $color-card;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  margin-bottom: 32rpx;
-  box-shadow: $shadow-card;
-}
-
-.section-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: $color-text;
-  margin-bottom: 24rpx;
-}
-
-.option-item {
-  margin-bottom: 28rpx;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.option-label {
-  font-size: 28rpx;
-  color: $color-text;
-  margin-bottom: 16rpx;
-}
-
-.option-control {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-}
-
-.option-value {
-  width: 100rpx;
-  font-size: 26rpx;
-  color: $color-primary;
-  text-align: right;
-}
-
-.palette-selector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.palette-item {
-  padding: 16rpx 24rpx;
-  background: $color-bg;
-  border-radius: $radius-button;
-  border: 2rpx solid transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4rpx;
-  
-  &.active {
-    border-color: $color-primary;
-    background: $color-primary-light;
-  }
-}
-
-.palette-name {
-  font-size: 26rpx;
-  color: $color-text;
-}
-
-.palette-count {
-  font-size: 22rpx;
-  color: $color-text-secondary;
-}
-
-.preview-section {
-  background: $color-card;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  margin-bottom: 32rpx;
-  box-shadow: $shadow-card;
-}
-
-.compare-container {
-  display: flex;
-  gap: 24rpx;
-}
-
-.compare-panel {
-  flex: 1;
+.upload-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12rpx;
+  color: $color-primary;
+  font-size: 34rpx;
+  font-weight: 900;
 }
 
-.panel-label {
-  font-size: 24rpx;
+.upload-empty text:first-child {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $color-primary-light;
+  font-size: 58rpx;
+}
+
+.control-card,
+.preview-card {
+  padding: 24rpx;
+  border-radius: 26rpx;
+  background: #FFFFFF;
+  box-shadow: $shadow-card;
+  margin-bottom: 22rpx;
+}
+
+.size-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-bottom: 22rpx;
+}
+
+.size-btn,
+.palette-btn {
+  height: 86rpx;
+  border-radius: 18rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: $color-bg;
   color: $color-text-secondary;
 }
 
-.compare-image, .compare-canvas {
-  width: 280rpx;
-  height: 280rpx;
-  border-radius: $radius-image;
-  background: $color-bg;
+.size-btn.active,
+.palette-btn.active {
+  color: $color-primary;
+  background: $color-primary-light;
+  outline: 3rpx solid $color-primary;
 }
 
-.action-section {
-  padding-bottom: 48rpx;
+.size-btn text:first-child {
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.size-btn text:last-child {
+  font-size: 20rpx;
+}
+
+.slider-row {
+  margin-bottom: 20rpx;
+}
+
+.slider-head,
+.preview-title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 28rpx;
+  font-weight: 900;
+  color: $color-text;
+}
+
+.slider-head text:last-child,
+.preview-title text:last-child {
+  color: $color-primary;
+}
+
+.palette-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+
+.palette-btn {
+  height: 68rpx;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.preview-title {
+  margin-bottom: 18rpx;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16rpx;
 }
 </style>

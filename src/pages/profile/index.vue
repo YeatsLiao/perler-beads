@@ -71,27 +71,39 @@
 import NavBar from '@/components/NavBar.vue';
 
 function goSettings() {
-  uni.showToast({ title: '设置功能开发中', icon: 'none' });
+  uni.navigateTo({ url: '/pages/settings/index' });
 }
 
 function goAbout() {
   uni.showModal({
     title: '关于想想手作',
-    content: '想想手作是一款专为拼豆手工爱好者设计的创作工具，帮助你将创意转化为可触摸的艺术作品。',
+    content: '想想手作是一款专为拼豆手工爱好者设计的创作工具，帮助你将创意转化为可触摸的艺术作品。\n\n版本：1.0.0',
     showCancel: false
   });
 }
 
 function goFeedback() {
-  uni.showToast({ title: '反馈功能开发中', icon: 'none' });
+  uni.showModal({
+    title: '意见反馈',
+    content: '如有建议或问题，欢迎发送邮件至 feedback@xiangxiang.app',
+    showCancel: false
+  });
 }
 
 function goPrivacy() {
-  uni.showToast({ title: '隐私政策开发中', icon: 'none' });
+  uni.showModal({
+    title: '隐私政策',
+    content: '我们重视您的隐私保护。本应用不会收集您的个人身份信息，所有创作数据仅存储在您的本地设备上，不会上传至任何服务器。',
+    showCancel: false
+  });
 }
 
 function goTerms() {
-  uni.showToast({ title: '用户协议开发中', icon: 'none' });
+  uni.showModal({
+    title: '用户协议',
+    content: '使用本应用即表示您同意：1. 所有创作内容的版权归您所有；2. 本应用提供的色板数据仅供参考；3. 我们有权在必要时更新服务条款。',
+    showCancel: false
+  });
 }
 </script>
 

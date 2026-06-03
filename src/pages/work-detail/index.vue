@@ -1,110 +1,101 @@
 <template>
   <view class="page">
-    <NavBar :title="work?.title || '作品详情'" showBack />
-    
+    <NavBar :title="work.title" showBack />
+
     <scroll-view class="content" scroll-y>
-      <view class="work-image-container">
-        <image class="work-image" :src="work?.thumbnail" mode="aspectFit" />
+      <view class="preview-shell">
+        <PixelPreview :pattern="work.pattern" raised background="#FFFDF9" />
       </view>
 
-      <view class="work-info">
-        <view class="info-row">
-          <view class="author-info">
-            <view class="author-avatar">👤</view>
-            <view class="author-detail">
-              <text class="author-name">{{ work?.userInfo.nickname }}</text>
-              <text class="publish-time">{{ formatDate(work?.publishedAt) }}</text>
+      <view class="info-card surface">
+        <view class="author-row">
+          <view class="author">
+            <view class="avatar">{{ work.userInfo.nickname.slice(0, 1) }}</view>
+            <view>
+              <text class="author-name">{{ work.userInfo.nickname }}</text>
+              <text class="author-level">{{ work.authorLevel }} · {{ formatDate(work.publishedAt) }}</text>
             </view>
           </view>
-          <view class="follow-btn" @click="toggleFollow">
-            <text>{{ isFollowed ? '已关注' : '关注' }}</text>
+          <view class="follow" :class="{ active: isFollowed }" @click="toggleFollow">
+            {{ isFollowed ? '已关注' : '关注' }}
           </view>
         </view>
 
-        <view class="work-title">{{ work?.title }}</view>
-        <view class="work-desc">{{ work?.description || '暂无描述' }}</view>
-        
-        <view class="work-meta">
-          <view class="meta-item">
-            <text class="meta-icon">📐</text>
-            <text class="meta-text">{{ work?.sketch.width }}×{{ work?.sketch.height }}</text>
+        <text class="work-title">{{ work.title }}</text>
+        <text class="work-desc">{{ work.description }}</text>
+
+        <view class="meta-grid">
+          <view>
+            <text>{{ work.sketch.width }}×{{ work.sketch.height }}</text>
+            <text>尺寸</text>
           </view>
-          <view class="meta-item">
-            <text class="meta-icon">🎨</text>
-            <text class="meta-text">{{ work?.sketch.colorCount }}色</text>
+          <view>
+            <text>{{ work.sketch.colorCount }}</text>
+            <text>颜色</text>
           </view>
-          <view class="meta-item">
-            <text class="meta-icon">🏷️</text>
-            <text class="meta-text">{{ work?.tags.join(' ') }}</text>
+          <view>
+            <text>{{ beadTotal }}</text>
+            <text>颗粒</text>
+          </view>
+        </view>
+
+        <view class="tag-row">
+          <text v-for="tag in work.tags" :key="tag">#{{ tag }}</text>
+        </view>
+      </view>
+
+      <view class="palette-card surface">
+        <view class="section-title">用色预估</view>
+        <view class="material-list">
+          <view v-for="item in materials" :key="item.hex" class="material-item">
+            <view class="material-color" :style="{ background: item.hex }"></view>
+            <view class="material-main">
+              <text>{{ item.name }}</text>
+              <view class="material-bar"><view :style="{ width: item.percent + '%' }"></view></view>
+            </view>
+            <text class="material-count">{{ item.count }} 颗</text>
           </view>
         </view>
       </view>
 
-      <view class="stats-section">
+      <view class="stats-section surface">
         <view class="stat-item" @click="toggleLike">
-          <text class="stat-icon">{{ isLiked ? '❤️' : '🤍' }}</text>
-          <text class="stat-value">{{ work?.stats.likes + (isLiked ? 1 : 0) }}</text>
-          <text class="stat-label">点赞</text>
+          <text>{{ isLiked ? '♥' : '♡' }}</text>
+          <text>{{ work.stats.likes + (isLiked ? 1 : 0) }}</text>
+          <text>点赞</text>
         </view>
         <view class="stat-item" @click="toggleFavorite">
-          <text class="stat-icon">{{ isFavorited ? '⭐' : '☆' }}</text>
-          <text class="stat-value">{{ work?.stats.likes }}</text>
-          <text class="stat-label">收藏</text>
+          <text>{{ isFavorited ? '★' : '☆' }}</text>
+          <text>{{ work.stats.downloads + (isFavorited ? 1 : 0) }}</text>
+          <text>收藏</text>
         </view>
         <view class="stat-item">
-          <text class="stat-icon">👁️</text>
-          <text class="stat-value">{{ work?.stats.views }}</text>
-          <text class="stat-label">浏览</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-icon">💬</text>
-          <text class="stat-value">{{ work?.stats.comments }}</text>
-          <text class="stat-label">评论</text>
+          <text>◉</text>
+          <text>{{ work.stats.views }}</text>
+          <text>浏览</text>
         </view>
       </view>
 
-      <view class="actions-section">
-        <Button type="primary" @click="downloadWork">下载图纸</Button>
-        <Button type="secondary" @click="shareWork">分享作品</Button>
+      <view class="actions">
+        <Button type="primary" @click="reuseWork">复用创作</Button>
+        <Button type="secondary" @click="downloadWork">下载图纸</Button>
       </view>
 
-      <view class="comments-section">
-        <view class="section-title">评论 ({{ work?.stats.comments }})</view>
-        
-        <view v-if="comments.length === 0" class="empty-comments">
-          <text class="empty-icon">💬</text>
-          <text class="empty-text">暂无评论，快来发表第一条评论吧</text>
-        </view>
-        
-        <view v-else class="comments-list">
-          <view 
-            v-for="comment in comments" 
-            :key="comment._id"
-            class="comment-item"
-          >
-            <view class="comment-avatar">👤</view>
-            <view class="comment-content">
-              <view class="comment-header">
-                <text class="comment-author">{{ comment.userInfo.nickname }}</text>
-                <text class="comment-time">{{ formatDate(comment.createdAt) }}</text>
-              </view>
-              <text class="comment-text">{{ comment.content }}</text>
-              <view class="comment-actions">
-                <text class="action-item" @click="likeComment(comment._id)">
-                  ❤️ {{ comment.likes }}
-                </text>
-              </view>
+      <view class="comments surface">
+        <view class="section-title">讨论</view>
+        <view class="comment" v-for="comment in comments" :key="comment.id">
+          <view class="comment-avatar">{{ comment.name.slice(0, 1) }}</view>
+          <view>
+            <view class="comment-head">
+              <text>{{ comment.name }}</text>
+              <text>{{ comment.time }}</text>
             </view>
+            <text class="comment-text">{{ comment.text }}</text>
           </view>
         </view>
-
         <view class="comment-input">
-          <input 
-            class="input-field" 
-            placeholder="写下你的评论..." 
-            v-model="commentText"
-          />
-          <view class="send-btn" @click="sendComment">发送</view>
+          <input v-model="commentText" placeholder="写下制作心得..." />
+          <view @click="sendComment">发送</view>
         </view>
       </view>
     </scroll-view>
@@ -112,69 +103,74 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import NavBar from '@/components/NavBar.vue';
 import Button from '@/components/Button.vue';
+import PixelPreview from '@/components/PixelPreview.vue';
+import { getDemoWork, demoWorks } from '@/utils/demoWorks';
+import { draftStorage } from '@/utils/draftStorage';
+import { ColorCounter } from '@/utils/colorCounter';
+import { DEFAULT_PALETTE } from '@/constants/palettes';
+import { useEditorStore } from '@/stores/editor';
 
-const work = ref({
-  _id: '1',
-  title: '可爱猫咪',
-  thumbnail: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=cute%20pixel%20art%20cat%20portrait&image_size=square',
-  userInfo: { nickname: '手作达人', avatar: '' },
-  description: '用拼豆制作的可爱猫咪图案，适合送给喜欢猫咪的朋友~',
-  sketch: { width: 29, height: 29, pixelSize: 10, paletteId: 'perler_80', colorCount: 5 },
-  tags: ['猫咪', '可爱', '宠物'],
-  stats: { likes: 128, views: 520, downloads: 64, comments: 3 },
-  publishedAt: new Date(Date.now() - 86400000)
-});
+const cc = new ColorCounter();
+const store = useEditorStore();
 
-const comments = ref([
-  {
-    _id: 'c1',
-    userInfo: { nickname: '手工爱好者', avatar: '' },
-    content: '太可爱了！这个配色好舒服',
-    likes: 12,
-    createdAt: new Date(Date.now() - 3600000)
-  },
-  {
-    _id: 'c2',
-    userInfo: { nickname: '创意玩家', avatar: '' },
-    content: '求教程！想学着做一个',
-    likes: 8,
-    createdAt: new Date(Date.now() - 7200000)
-  },
-  {
-    _id: 'c3',
-    userInfo: { nickname: '拼豆新手', avatar: '' },
-    content: '请问用的是什么品牌的豆子呀？',
-    likes: 5,
-    createdAt: new Date(Date.now() - 10800000)
-  }
-]);
-
+const work = reactive(getDemoWork()) as ReturnType<typeof getDemoWork>;
 const isLiked = ref(false);
 const isFavorited = ref(false);
 const isFollowed = ref(false);
 const commentText = ref('');
+
+const comments = ref([
+  { id: '1', name: '手工爱好者', text: '这个色号搭配很舒服，准备周末照着做。', time: '1小时前' },
+  { id: '2', name: '拼豆新手', text: '11×9 对新手太友好了，感谢分享。', time: '昨天' }
+]);
+
+const beadTotal = computed(() => work.pattern.flat().filter(Boolean).length);
+const materials = computed(() => {
+  const stats = cc.countColors(work.pattern, DEFAULT_PALETTE);
+  return stats.map(s => ({
+    hex: s.hex,
+    count: s.count,
+    name: s.colorName,
+    percent: Math.round(s.percentage)
+  }));
+});
 
 onMounted(() => {
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
   const options = (currentPage as any).$page?.options || {};
   if (options.id) {
-    console.log('Work ID:', options.id);
+    const draft = draftStorage.loadDraft(options.id);
+    if (draft) {
+      Object.assign(work, {
+        _id: draft._id,
+        title: draft.title,
+        description: '',
+        pattern: draft.pixels,
+        sketch: { width: draft.width, height: draft.height, pixelSize: 10, paletteId: draft.paletteId, colorCount: 0 },
+        stats: { likes: 0, views: 0, downloads: 0, comments: 0 },
+        userInfo: { nickname: '我', avatar: '' },
+        tags: [],
+        category: 'other',
+        authorLevel: '',
+        publishedAt: new Date(draft.createdAt)
+      });
+    } else {
+      const selected = getDemoWork(options.id);
+      Object.assign(work, selected);
+    }
   }
 });
 
 function formatDate(date?: Date) {
-  if (!date) return '';
-  const now = new Date();
-  const diff = now.getTime() - new Date(date).getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  
-  if (hours < 1) return '刚刚';
-  if (hours < 24) return `${hours}小时前`;
-  return new Date(date).toLocaleDateString();
+  if (!date) return '刚刚';
+  const days = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 86400000));
+  if (days === 0) return '今天';
+  if (days === 1) return '昨天';
+  return `${days} 天前`;
 }
 
 function toggleLike() {
@@ -189,329 +185,320 @@ function toggleFollow() {
   isFollowed.value = !isFollowed.value;
 }
 
-function downloadWork() {
-  uni.showToast({ title: '下载成功', icon: 'success' });
+function reuseWork() {
+  store.loadPixels(work.pattern);
+  uni.navigateTo({ url: `/pages/editor/index?id=${work._id}` });
 }
 
-function shareWork() {
-  uni.showShareMenu({
-    withShareTicket: true,
-    success: () => {
-      uni.showToast({ title: '分享成功', icon: 'success' });
-    }
-  });
+function downloadWork() {
+  store.loadPixels(work.pattern);
+  uni.navigateTo({ url: `/pages/export/index` });
 }
 
 function sendComment() {
   if (!commentText.value.trim()) return;
-  
-  comments.value.unshift({
-    _id: `c${Date.now()}`,
-    userInfo: { nickname: '我', avatar: '' },
-    content: commentText.value,
-    likes: 0,
-    createdAt: new Date()
-  });
-  
+  comments.value.unshift({ id: `${Date.now()}`, name: '我', text: commentText.value, time: '刚刚' });
   commentText.value = '';
-  uni.showToast({ title: '评论成功', icon: 'success' });
-}
-
-function likeComment(id: string) {
-  const comment = comments.value.find(c => c._id === id);
-  if (comment) {
-    comment.likes++;
-  }
 }
 </script>
 
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  background: $color-bg;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 183, 197, 0.22), transparent 34%),
+    $color-bg;
 }
 
 .content {
   height: calc(100vh - 112rpx);
+  padding: 136rpx 24rpx 132rpx;
 }
 
-.work-image-container {
-  background: $color-card;
+.preview-shell {
+  margin-bottom: 22rpx;
+  padding: 18rpx 36rpx;
+}
+
+.info-card,
+.palette-card,
+.stats-section,
+.comments {
   padding: 24rpx;
+  border-radius: 24rpx;
+  margin-bottom: 20rpx;
 }
 
-.work-image {
-  width: 100%;
-  max-height: 600rpx;
-  border-radius: $radius-card;
-}
-
-.work-info {
-  background: $color-card;
-  margin: 24rpx;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  box-shadow: $shadow-card;
-}
-
-.info-row {
+.author-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20rpx;
+  margin-bottom: 22rpx;
 }
 
-.author-info {
+.author {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 14rpx;
 }
 
-.author-avatar {
-  width: 72rpx;
-  height: 72rpx;
-  background: $color-bg;
-  border-radius: 50%;
+.avatar,
+.comment-avatar {
+  width: 64rpx;
+  height: 64rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36rpx;
-}
-
-.author-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
+  border-radius: 18rpx;
+  background: $gradient-warm;
+  color: $color-text;
+  font-weight: 900;
 }
 
 .author-name {
-  font-size: 28rpx;
-  font-weight: 500;
+  display: block;
+  font-size: 27rpx;
+  font-weight: 800;
   color: $color-text;
 }
 
-.publish-time {
-  font-size: 24rpx;
-  color: $color-text-weak;
+.author-level {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: $color-text-secondary;
 }
 
-.follow-btn {
-  padding: 12rpx 32rpx;
+.follow {
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
   background: $color-primary;
-  border-radius: $radius-button;
-  font-size: 26rpx;
   color: #FFFFFF;
-  
-  &:active {
-    opacity: 0.8;
-  }
+  font-size: 23rpx;
+  font-weight: 800;
+}
+
+.follow.active {
+  background: $color-bg;
+  color: $color-text-secondary;
 }
 
 .work-title {
-  font-size: 36rpx;
-  font-weight: 600;
+  display: block;
+  font-size: 38rpx;
+  font-weight: 900;
   color: $color-text;
-  margin-bottom: 12rpx;
 }
 
 .work-desc {
-  font-size: 28rpx;
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
   color: $color-text-secondary;
-  line-height: 1.6;
-  margin-bottom: 20rpx;
+  line-height: 1.55;
 }
 
-.work-meta {
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-top: 22rpx;
+}
+
+.meta-grid view {
+  padding: 18rpx;
+  border-radius: 18rpx;
+  background: $color-bg;
+  text-align: center;
+}
+
+.meta-grid text:first-child {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 900;
+  color: $color-primary;
+}
+
+.meta-grid text:last-child {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: $color-text-secondary;
+}
+
+.tag-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx;
+  gap: 10rpx;
+  margin-top: 18rpx;
 }
 
-.meta-item {
+.tag-row text {
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: $color-primary-light;
+  color: $color-primary;
+  font-size: 21rpx;
+  font-weight: 800;
+}
+
+.section-title {
+  margin-bottom: 18rpx;
+  font-size: 29rpx;
+  font-weight: 900;
+  color: $color-text;
+}
+
+.material-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.material-item {
   display: flex;
   align-items: center;
-  gap: 8rpx;
-  padding: 8rpx 16rpx;
-  background: $color-bg;
-  border-radius: $radius-button;
+  gap: 14rpx;
 }
 
-.meta-icon {
-  font-size: 24rpx;
+.material-color {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(74, 55, 40, 0.1);
 }
 
-.meta-text {
-  font-size: 24rpx;
+.material-main {
+  flex: 1;
+}
+
+.material-main text {
+  display: block;
+  margin-bottom: 7rpx;
+  font-size: 21rpx;
   color: $color-text-secondary;
+}
+
+.material-bar {
+  height: 10rpx;
+  border-radius: 999rpx;
+  background: $color-bg;
+  overflow: hidden;
+}
+
+.material-bar view {
+  height: 100%;
+  border-radius: inherit;
+  background: $gradient-primary;
+}
+
+.material-count {
+  width: 86rpx;
+  text-align: right;
+  font-size: 22rpx;
+  color: $color-text;
+  font-weight: 800;
 }
 
 .stats-section {
-  display: flex;
-  justify-content: space-around;
-  margin: 0 24rpx;
-  background: $color-card;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  box-shadow: $shadow-card;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8rpx;
-  
-  &:active {
-    opacity: 0.7;
-  }
+  gap: 5rpx;
+  padding: 14rpx;
+  border-radius: 18rpx;
+  background: $color-bg;
 }
 
-.stat-icon {
-  font-size: 40rpx;
+.stat-item text:first-child {
+  font-size: 34rpx;
+  color: $color-primary;
 }
 
-.stat-value {
-  font-size: 32rpx;
-  font-weight: 600;
+.stat-item text:nth-child(2) {
+  font-size: 27rpx;
+  font-weight: 900;
   color: $color-text;
 }
 
-.stat-label {
-  font-size: 24rpx;
+.stat-item text:last-child {
+  font-size: 20rpx;
   color: $color-text-secondary;
 }
 
-.actions-section {
-  display: flex;
-  gap: 20rpx;
-  margin: 24rpx;
-}
-
-.actions-section .btn {
-  flex: 1;
-}
-
-.comments-section {
-  margin: 0 24rpx 24rpx;
-  background: $color-card;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  box-shadow: $shadow-card;
-}
-
-.section-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: $color-text;
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
   margin-bottom: 20rpx;
 }
 
-.empty-comments {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 48rpx 0;
-  gap: 12rpx;
-}
-
-.empty-icon {
-  font-size: 64rpx;
-}
-
-.empty-text {
-  font-size: 26rpx;
-  color: $color-text-secondary;
-}
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-
-.comment-item {
-  display: flex;
-  gap: 16rpx;
+.comment {
+  display: grid;
+  grid-template-columns: 56rpx 1fr;
+  gap: 14rpx;
+  padding: 14rpx 0;
 }
 
 .comment-avatar {
   width: 56rpx;
   height: 56rpx;
-  background: $color-bg;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28rpx;
-  flex-shrink: 0;
-}
-
-.comment-content {
-  flex: 1;
-}
-
-.comment-header {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-bottom: 8rpx;
-}
-
-.comment-author {
-  font-size: 26rpx;
-  font-weight: 500;
-  color: $color-text;
-}
-
-.comment-time {
+  border-radius: 16rpx;
   font-size: 22rpx;
-  color: $color-text-weak;
+}
+
+.comment-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6rpx;
+  font-size: 22rpx;
+  color: $color-text-secondary;
+}
+
+.comment-head text:first-child {
+  color: $color-text;
+  font-weight: 800;
 }
 
 .comment-text {
-  font-size: 28rpx;
+  font-size: 25rpx;
   color: $color-text;
-  line-height: 1.5;
-}
-
-.comment-actions {
-  margin-top: 12rpx;
-}
-
-.action-item {
-  font-size: 24rpx;
-  color: $color-text-secondary;
-  
-  &:active {
-    color: $color-primary;
-  }
+  line-height: 1.45;
 }
 
 .comment-input {
   display: flex;
-  gap: 16rpx;
-  margin-top: 20rpx;
-  padding-top: 20rpx;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  padding-top: 18rpx;
   border-top: 2rpx solid $color-border;
 }
 
-.input-field {
+.comment-input input {
   flex: 1;
-  padding: 20rpx 24rpx;
+  height: 70rpx;
+  padding: 0 20rpx;
+  border-radius: 18rpx;
   background: $color-bg;
-  border-radius: $radius-button;
-  font-size: 28rpx;
+  font-size: 25rpx;
 }
 
-.send-btn {
-  padding: 20rpx 32rpx;
+.comment-input view {
+  width: 98rpx;
+  height: 70rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
   background: $color-primary;
-  border-radius: $radius-button;
-  font-size: 28rpx;
   color: #FFFFFF;
-  
-  &:active {
-    opacity: 0.8;
-  }
+  font-size: 24rpx;
+  font-weight: 800;
 }
 </style>

@@ -8,6 +8,14 @@ page {
   line-height: 1.5;
 }
 
+view,
+text,
+scroll-view,
+input,
+button {
+  box-sizing: border-box;
+}
+
 .container {
   padding: $spacing-page;
   min-height: 100vh;
@@ -20,6 +28,13 @@ page {
   padding: $spacing-padding;
   margin-bottom: $spacing-card;
   box-shadow: $shadow-card;
+}
+
+.surface {
+  background: rgba(255, 255, 255, 0.86);
+  border: 2rpx solid rgba(255, 232, 217, 0.9);
+  box-shadow: $shadow-card;
+  backdrop-filter: blur(18rpx);
 }
 
 .btn-primary {
@@ -37,6 +52,20 @@ page {
     transform: scale(0.98);
     opacity: 0.9;
   }
+}
+
+.bead-pattern {
+  background-image: radial-gradient(circle, rgba(74, 55, 40, 0.08) 1rpx, transparent 1rpx);
+  background-size: 22rpx 22rpx;
+}
+
+uni-scroll-view.content > .uni-scroll-view,
+uni-scroll-view.content > .uni-scroll-view > .uni-scroll-view-content {
+  box-sizing: border-box;
+}
+
+uni-scroll-view.content > .uni-scroll-view {
+  padding: inherit;
 }
 
 .btn-secondary {

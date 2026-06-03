@@ -1,14 +1,78 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Sketch } from '@/types';
+import { draftStorage, type DraftData } from '@/utils/draftStorage';
+import { demoWorks } from '@/utils/demoWorks';
+import type { PixelPattern } from '@/utils/demoWorks';
 
 export const useSketchStore = defineStore('sketch', () => {
   const sketches = ref<Sketch[]>([]);
   const currentSketch = ref<Sketch | null>(null);
   const isSaving = ref(false);
 
-  const drafts = computed(() => sketches.value.filter(s => s.isDraft));
-  const publishedWorks = computed(() => sketches.value.filter(s => !s.isDraft && s.isPublic));
+  function refreshDrafts() {
+    try {
+      const drafts = draftStorage.loadAllDrafts();
+      const draftSketches: Sketch[] = drafts.map(d => draftToSketch(d));
+      const demoSketches: Sketch[] = demoWorks.map(w => ({
+        _id: w._id,
+        userId: w.userId,
+        title: w.title,
+        description: w.description,
+        canvas: { width: w.sketch.width, height: w.sketch.height, pixelSize: w.sketch.pixelSize },
+        paletteId: w.sketch.paletteId,
+        pixels: '',
+        isPublic: true,
+        isDraft: false,
+        tags: w.tags,
+        category: w.category,
+        createdAt: new Date(w.createdAt),
+        updatedAt: new Date(w.updatedAt),
+        publishedAt: w.publishedAt ? new Date(w.publishedAt) : undefined
+      }));
+      sketches.value = [...draftSketches, ...demoSketches];
+    } catch (_) {}
+  }
+
+  const drafts = computed(() => {
+    const draftItems = draftStorage.loadAllDrafts();
+    return draftItems.map(d => draftToSketch(d));
+  });
+
+  const publishedWorks = computed(() => {
+    return demoWorks.map(w => ({
+      _id: w._id,
+      userId: w.userId,
+      title: w.title,
+      description: w.description,
+      canvas: { width: w.sketch.width, height: w.sketch.height, pixelSize: w.sketch.pixelSize },
+      paletteId: w.sketch.paletteId,
+      pixels: '',
+      isPublic: true,
+      isDraft: false,
+      tags: w.tags,
+      category: w.category,
+      createdAt: new Date(w.createdAt),
+      updatedAt: new Date(w.updatedAt),
+      publishedAt: w.publishedAt ? new Date(w.publishedAt) : undefined
+    }));
+  });
+
+  function draftToSketch(d: DraftData): Sketch {
+    return {
+      _id: d._id,
+      userId: 'local',
+      title: d.title,
+      canvas: { width: d.width, height: d.height, pixelSize: 10 },
+      paletteId: d.paletteId,
+      pixels: '',
+      isPublic: false,
+      isDraft: true,
+      tags: [],
+      createdAt: new Date(d.createdAt),
+      updatedAt: new Date(d.updatedAt)
+    };
+  }
 
   function addSketch(sketch: Sketch) {
     sketches.value.unshift(sketch);
@@ -26,6 +90,7 @@ export const useSketchStore = defineStore('sketch', () => {
   }
 
   function deleteSketch(id: string) {
+    draftStorage.deleteDraft(id);
     sketches.value = sketches.value.filter(s => s._id !== id);
     if (currentSketch.value?._id === id) {
       currentSketch.value = null;
@@ -45,6 +110,7 @@ export const useSketchStore = defineStore('sketch', () => {
     addSketch,
     updateSketch,
     deleteSketch,
-    setCurrentSketch
+    setCurrentSketch,
+    refreshDrafts
   };
 });

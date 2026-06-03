@@ -1,186 +1,128 @@
 <template>
   <view class="page">
-    <NavBar title="导出" />
-    
+    <NavBar title="导出" showBack />
+
     <scroll-view class="content" scroll-y>
-      <view class="preview-section">
-        <view class="section-title">导出预览</view>
-        <view class="preview-container">
-          <canvas canvas-id="exportCanvas" class="preview-canvas"></canvas>
+      <view class="preview-card">
+        <view class="preview-head">
+          <text>{{ store.canvasWidth }}×{{ store.canvasHeight }}</text>
+          <text>{{ store.beadCount }} 颗 · {{ store.usedColors }} 色</text>
+        </view>
+        <view class="preview-frame" :class="{ mirrored: flipHorizontal }">
+          <PixelPreview :pattern="store.pixels" background="#FFFDF9" />
         </view>
       </view>
 
-      <view class="options-section">
-        <view class="section-title">导出格式</view>
-        <view class="format-options">
-          <view 
-            v-for="format in formats" 
-            :key="format.id"
-            class="format-item"
-            :class="{ active: selectedFormat === format.id }"
-            @click="selectedFormat = format.id"
-          >
-            <text class="format-icon">{{ format.icon }}</text>
-            <text class="format-name">{{ format.name }}</text>
-          </view>
+      <view class="card">
+        <view class="card-title">格式</view>
+        <view class="format-row">
+          <view
+            v-for="format in formats"
+            :key="format"
+            class="format-btn"
+            :class="{ active: selectedFormat === format }"
+            @click="selectedFormat = format"
+          >{{ format.toUpperCase() }}</view>
         </view>
       </view>
 
-      <view class="options-section">
-        <view class="section-title">导出选项</view>
-        
-        <view class="option-switch">
-          <view class="switch-label">
-            <text class="switch-name">显示网格线</text>
-            <text class="switch-desc">打印时更方便对照</text>
-          </view>
-          <switch :checked="showGrid" @change="showGrid = $event.detail.value" color="#FF6B6B" />
+      <view class="card">
+        <view class="card-title">选项</view>
+        <view class="option-row" @click="showGrid = !showGrid">
+          <text>网格线</text>
+          <switch :checked="showGrid" color="#FF7A59" />
         </view>
-
-        <view class="option-switch">
-          <view class="switch-label">
-            <text class="switch-name">显示色号标注</text>
-            <text class="switch-desc">每个像素显示对应色号</text>
-          </view>
-          <switch :checked="showColorId" @change="showColorId = $event.detail.value" color="#FF6B6B" />
+        <view class="option-row" @click="showColorId = !showColorId">
+          <text>色号</text>
+          <switch :checked="showColorId" color="#FF7A59" />
         </view>
-
-        <view class="option-switch">
-          <view class="switch-label">
-            <text class="switch-name">镜像翻转</text>
-            <text class="switch-desc">熨烫后图案方向正确</text>
-          </view>
-          <switch :checked="flipHorizontal" @change="flipHorizontal = $event.detail.value" color="#FF6B6B" />
-        </view>
-
-        <view class="option-item">
-          <view class="option-label">导出倍率</view>
-          <view class="scale-options">
-            <view 
-              v-for="scale in scales" 
-              :key="scale"
-              class="scale-item"
-              :class="{ active: exportScale === scale }"
-              @click="exportScale = scale"
-            >
-              <text>{{ scale }}x</text>
-            </view>
-          </view>
-        </view>
-
-        <view class="option-item">
-          <view class="option-label">背景设置</view>
-          <view class="bg-options">
-            <view 
-              v-for="bg in backgrounds" 
-              :key="bg.id"
-              class="bg-item"
-              :class="{ active: selectedBackground === bg.id }"
-              @click="selectedBackground = bg.id"
-            >
-              <view class="bg-preview" :style="{ background: bg.color }"></view>
-              <text class="bg-name">{{ bg.name }}</text>
-            </view>
-          </view>
+        <view class="option-row" @click="flipHorizontal = !flipHorizontal">
+          <text>镜像</text>
+          <switch :checked="flipHorizontal" color="#FF7A59" />
         </view>
       </view>
 
-      <view class="material-section">
-        <view class="section-title">备料清单</view>
-        <view class="material-list">
-          <view 
-            v-for="item in materialList" 
-            :key="item.colorId"
-            class="material-item"
-          >
-            <view class="color-dot" :style="{ background: item.hex }"></view>
-            <view class="material-info">
-              <text class="material-id">{{ item.colorId }}</text>
-              <text class="material-name">{{ item.colorName }}</text>
-            </view>
-            <text class="material-count">{{ item.quantity }}颗</text>
-          </view>
+      <view class="card">
+        <view class="card-title">备料</view>
+        <view v-if="store.materialStats.length === 0" class="empty">暂无颗粒</view>
+        <view v-for="item in store.materialStats" :key="item.hex" class="material">
+          <view class="dot" :style="{ background: item.hex }"></view>
+          <text>{{ item.colorName || item.hex }}</text>
+          <text>{{ item.count }} 颗</text>
         </view>
       </view>
 
-      <view class="action-section">
-        <Button type="primary" @click="handleExport">导出图纸</Button>
-        <Button type="secondary" style="margin-top: 16rpx;" @click="saveDraft">保存草稿</Button>
+      <view class="actions">
+        <Button type="primary" @click="handleExport">保存图片</Button>
+        <Button type="secondary" @click="copyList">复制备料</Button>
       </view>
     </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import NavBar from '@/components/NavBar.vue';
 import Button from '@/components/Button.vue';
+import PixelPreview from '@/components/PixelPreview.vue';
+import { useEditorStore } from '@/stores/editor';
+import { ExportService } from '@/utils/exportService';
+import { getPlatformAdapter } from '@/utils/platformAdapter';
+import type { ExportOptions } from '@/types';
 
-const selectedFormat = ref('png');
-const showGrid = ref(false);
+const store = useEditorStore();
+const selectedFormat = ref<'png' | 'jpg' | 'pdf'>('png');
+const showGrid = ref(true);
 const showColorId = ref(false);
 const flipHorizontal = ref(false);
-const exportScale = ref(3);
-const selectedBackground = ref('white');
+const formats = ['png', 'jpg', 'pdf'] as const;
 
-const formats = [
-  { id: 'png', name: 'PNG', icon: '🖼️' },
-  { id: 'jpg', name: 'JPG', icon: '📷' },
-  { id: 'pdf', name: 'PDF', icon: '📄' }
-];
+async function handleExport() {
+  if (selectedFormat.value === 'pdf') {
+    uni.showToast({ title: 'PDF导出功能即将上线，敬请期待', icon: 'none' });
+    return;
+  }
 
-const scales = [1, 2, 3, 5];
+  if (store.beadCount === 0) {
+    uni.showToast({ title: '画布为空，导出结果将为空白图片', icon: 'none' });
+  }
 
-const backgrounds = [
-  { id: 'white', name: '白色', color: '#FFFFFF' },
-  { id: 'transparent', name: '透明', color: 'transparent' }
-];
-
-const materialList = [
-  { colorId: '00000', colorName: '纯白', hex: '#FFFFFF', quantity: 128 },
-  { colorId: '00014', colorName: '浅粉', hex: '#FFB7C5', quantity: 64 },
-  { colorId: '00031', colorName: '蓝色', hex: '#0000FF', quantity: 32 },
-  { colorId: '00026', colorName: '绿色', hex: '#00FF00', quantity: 48 },
-  { colorId: '00041', colorName: '黑色', hex: '#000000', quantity: 16 }
-];
-
-onMounted(() => {
-  drawPreview();
-});
-
-function drawPreview() {
-  const ctx = uni.createCanvasContext('exportCanvas');
-  const size = 280;
-  const gridSize = 14;
-  const pixelSize = size / gridSize;
-  
-  ctx.setFillStyle('#FFFFFF');
-  ctx.fillRect(0, 0, size, size);
-  
-  const colors = ['#FFB7C5', '#0000FF', '#00FF00', '#FFFFFF', '#000000'];
-  
-  for (let y = 0; y < gridSize; y++) {
-    for (let x = 0; x < gridSize; x++) {
-      const colorIndex = Math.floor(Math.random() * colors.length);
-      ctx.setFillStyle(colors[colorIndex]);
-      ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize - 1, pixelSize - 1);
+  try {
+    const exportService = new ExportService();
+    const options: ExportOptions = {
+      format: selectedFormat.value,
+      scale: 28,
+      showGrid: showGrid.value,
+      showColorId: showColorId.value,
+      flipHorizontal: flipHorizontal.value,
+      background: 'white'
+    };
+    const dataUrl = await exportService.export(store.pixels, store.currentPalette, options);
+    const adapter = getPlatformAdapter();
+    await adapter.saveImage(dataUrl, `perler-pattern.${selectedFormat.value}`);
+    uni.showToast({ title: '已保存', icon: 'success' });
+  } catch (err: any) {
+    const msg = err?.errMsg || '';
+    if (msg.includes('auth') || msg.includes('permission')) {
+      uni.showModal({
+        title: '权限不足',
+        content: '需要相册权限才能保存图片，请在系统设置中开启',
+        showCancel: false
+      });
+    } else {
+      uni.showToast({ title: '导出失败', icon: 'none' });
     }
   }
-  
-  ctx.draw();
 }
 
-function handleExport() {
-  uni.showLoading({ title: '导出中...' });
-  
-  setTimeout(() => {
-    uni.hideLoading();
-    uni.showToast({ title: '导出成功', icon: 'success' });
-  }, 1500);
-}
-
-function saveDraft() {
-  uni.showToast({ title: '草稿已保存', icon: 'success' });
+function copyList() {
+  const text = store.materialStats
+    .map(item => `${item.colorName || item.hex}(${item.hex}): ${item.count}颗`)
+    .join('\n');
+  uni.setClipboardData({
+    data: text || '暂无颗粒',
+    success: () => uni.showToast({ title: '已复制', icon: 'success' })
+  });
 }
 </script>
 
@@ -192,225 +134,118 @@ function saveDraft() {
 
 .content {
   height: calc(100vh - 112rpx);
+  padding: 136rpx 24rpx 132rpx;
+}
+
+.preview-card,
+.card {
   padding: 24rpx;
-  padding-bottom: 120rpx;
+  border-radius: 26rpx;
+  background: #FFFFFF;
+  box-shadow: $shadow-card;
+  margin-bottom: 20rpx;
 }
 
-.preview-section {
-  margin-bottom: 24rpx;
-}
-
-.section-title {
-  font-size: 30rpx;
-  font-weight: 600;
+.preview-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+  font-size: 28rpx;
+  font-weight: 900;
   color: $color-text;
+}
+
+.preview-head text:last-child {
+  color: $color-primary;
+}
+
+.preview-frame {
+  padding: 8rpx 36rpx;
+}
+
+.preview-frame.mirrored {
+  transform: scaleX(-1);
+}
+
+.card-title {
   margin-bottom: 16rpx;
-}
-
-.preview-container {
-  background: $color-card;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  display: flex;
-  justify-content: center;
-  box-shadow: $shadow-card;
-}
-
-.preview-canvas {
-  width: 320rpx;
-  height: 320rpx;
-  border-radius: $radius-image;
-}
-
-.options-section {
-  background: $color-card;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  margin-bottom: 24rpx;
-  box-shadow: $shadow-card;
-}
-
-.format-options {
-  display: flex;
-  gap: 20rpx;
-}
-
-.format-item {
-  flex: 1;
-  padding: 24rpx 16rpx;
-  background: $color-bg;
-  border-radius: $radius-button;
-  border: 2rpx solid transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12rpx;
-  
-  &.active {
-    border-color: $color-primary;
-    background: $color-primary-light;
-  }
-}
-
-.format-icon {
-  font-size: 48rpx;
-}
-
-.format-name {
-  font-size: 26rpx;
+  font-size: 30rpx;
+  font-weight: 900;
   color: $color-text;
 }
 
-.option-switch {
+.format-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+}
+
+.format-btn {
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  background: $color-bg;
+  color: $color-text-secondary;
+  font-size: 25rpx;
+  font-weight: 900;
+}
+
+.format-btn.active {
+  background: $color-primary-light;
+  color: $color-primary;
+  outline: 3rpx solid $color-primary;
+}
+
+.option-row {
+  min-height: 82rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20rpx 0;
   border-bottom: 2rpx solid $color-border;
-  
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.switch-label {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
-.switch-name {
   font-size: 28rpx;
+  font-weight: 800;
   color: $color-text;
 }
 
-.switch-desc {
-  font-size: 24rpx;
-  color: $color-text-weak;
+.option-row:last-child {
+  border-bottom: none;
 }
 
-.option-item {
-  padding: 20rpx 0;
-}
-
-.option-label {
-  font-size: 28rpx;
-  color: $color-text;
-  margin-bottom: 16rpx;
-}
-
-.scale-options {
-  display: flex;
-  gap: 16rpx;
-}
-
-.scale-item {
-  flex: 1;
-  padding: 20rpx;
-  background: $color-bg;
-  border-radius: $radius-button;
-  text-align: center;
-  font-size: 28rpx;
-  color: $color-text;
-  border: 2rpx solid transparent;
-  
-  &.active {
-    border-color: $color-primary;
-    color: $color-primary;
-    font-weight: 600;
-  }
-}
-
-.bg-options {
-  display: flex;
-  gap: 20rpx;
-}
-
-.bg-item {
-  flex: 1;
-  padding: 20rpx 16rpx;
-  background: $color-bg;
-  border-radius: $radius-button;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12rpx;
-  border: 2rpx solid transparent;
-  
-  &.active {
-    border-color: $color-primary;
-  }
-}
-
-.bg-preview {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 50%;
-  border: 2rpx solid $color-border;
-}
-
-.bg-name {
-  font-size: 26rpx;
-  color: $color-text;
-}
-
-.material-section {
-  background: $color-card;
-  border-radius: $radius-card;
-  padding: 24rpx;
-  margin-bottom: 32rpx;
-  box-shadow: $shadow-card;
-}
-
-.material-list {
-  max-height: 400rpx;
-  overflow-y: auto;
-}
-
-.material-item {
+.material {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  padding: 16rpx 0;
-  border-bottom: 2rpx solid $color-border;
-  
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.color-dot {
-  width: 32rpx;
-  height: 32rpx;
-  border-radius: 50%;
-  border: 2rpx solid $color-border;
-}
-
-.material-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
-.material-id {
-  font-size: 26rpx;
-  font-weight: 600;
+  gap: 14rpx;
+  min-height: 58rpx;
+  font-size: 25rpx;
   color: $color-text;
 }
 
-.material-name {
-  font-size: 24rpx;
-  color: $color-text-secondary;
+.dot {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(74, 55, 40, 0.12);
 }
 
-.material-count {
-  font-size: 26rpx;
+.material text:nth-child(2) {
+  flex: 1;
+}
+
+.material text:last-child {
+  font-weight: 900;
   color: $color-primary;
-  font-weight: 600;
 }
 
-.action-section {
-  padding-bottom: 48rpx;
+.empty {
+  padding: 20rpx 0;
+  color: $color-text-secondary;
+  font-size: 26rpx;
+}
+
+.actions {
+  display: grid;
+  gap: 16rpx;
 }
 </style>

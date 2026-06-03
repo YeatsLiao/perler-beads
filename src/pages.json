@@ -10,17 +10,15 @@
     {
       "path": "pages/create/index",
       "style": {
-        "navigationBarTitleText": "创作中心",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "创作中心"
       }
     },
     {
       "path": "pages/generate/index",
       "style": {
-        "navigationBarTitleText": "图片生成",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "图片生成"
       }
     },
     {
@@ -33,41 +31,43 @@
     {
       "path": "pages/export/index",
       "style": {
-        "navigationBarTitleText": "导出",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "导出"
       }
     },
     {
       "path": "pages/works/index",
       "style": {
-        "navigationBarTitleText": "我的作品",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "我的作品"
       }
     },
     {
       "path": "pages/profile/index",
       "style": {
-        "navigationBarTitleText": "个人中心",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "个人中心"
       }
     },
     {
       "path": "pages/work-detail/index",
       "style": {
-        "navigationBarTitleText": "作品详情",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "作品详情"
       }
     },
     {
       "path": "pages/search/index",
       "style": {
-        "navigationBarTitleText": "搜索",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "搜索"
+      }
+    },
+    {
+      "path": "pages/settings/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "设置"
       }
     }
   ],

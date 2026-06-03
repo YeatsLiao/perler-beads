@@ -62,7 +62,9 @@
             class="result-item"
             @click="goDetail(result._id)"
           >
-            <image class="result-image" :src="result.thumbnail" mode="aspectFill" />
+            <view class="result-image">
+              <PixelPreview :pattern="result.pattern" compact background="#FFFDF9" />
+            </view>
             <view class="result-info">
               <view class="result-title">{{ result.title }}</view>
               <view class="result-author">{{ result.userInfo.nickname }}</view>
@@ -84,10 +86,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import NavBar from '@/components/NavBar.vue';
+import PixelPreview from '@/components/PixelPreview.vue';
+import { localSearchService, type SearchableItem } from '@/utils/localSearchService';
+import { draftStorage, type DraftData } from '@/utils/draftStorage';
+import { demoWorks, type PixelPattern } from '@/utils/demoWorks';
 
 const searchText = ref('');
 
-const hotTags = ['猫咪', '风景', '动漫', '文字', '可爱', '节日', '宠物', '人物'];
+const hotTags = ['猫咪', '风景', '渐变', '文字', '可爱', '节日', '花朵', '礼物'];
 
 const categories = [
   { id: 'cartoon', name: '卡通', icon: '🐱' },
@@ -97,52 +103,46 @@ const categories = [
   { id: 'other', name: '其他', icon: '✨' }
 ];
 
-const results = ref([
-  {
-    _id: '1',
-    title: '可爱猫咪',
-    thumbnail: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=cute%20pixel%20art%20cat&image_size=square',
-    userInfo: { nickname: '手作达人' },
-    tags: ['猫咪', '可爱', '宠物']
-  },
-  {
-    _id: '2',
-    title: '风景插画',
-    thumbnail: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=pixel%20art%20landscape&image_size=square',
-    userInfo: { nickname: '创意玩家' },
-    tags: ['风景', '自然', '治愈']
-  },
-  {
-    _id: '3',
-    title: '动漫角色',
-    thumbnail: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=anime%20character%20pixel%20art&image_size=square',
-    userInfo: { nickname: '像素大师' },
-    tags: ['动漫', '角色', '二次元']
-  }
-]);
+interface SearchResult {
+  _id: string;
+  title: string;
+  thumbnail: string;
+  pattern: PixelPattern;
+  userInfo: { nickname: string };
+  tags: string[];
+}
+
+const results = ref<SearchResult[]>([]);
 
 onMounted(() => {
+  localSearchService.refreshIndex();
+
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
   const options = (currentPage as any).$page?.options || {};
-  
+
   if (options.keyword) {
     searchText.value = decodeURIComponent(options.keyword);
     handleSearch();
+  } else if (options.category) {
+    searchCategory(options.category);
   }
 });
 
 function handleSearch() {
-  if (!searchText.value.trim()) return;
-  
-  uni.showToast({ 
-    title: `搜索 "${searchText.value}"`, 
-    icon: 'none' 
-  });
+  if (!searchText.value.trim()) {
+    results.value = [];
+    return;
+  }
+
+  localSearchService.refreshIndex();
+  const items = localSearchService.search(searchText.value);
+  results.value = items.map(toSearchResult);
 }
 
 function clearSearch() {
   searchText.value = '';
+  results.value = [];
 }
 
 function handleCancel() {
@@ -151,15 +151,43 @@ function handleCancel() {
 
 function searchTag(tag: string) {
   searchText.value = tag;
-  handleSearch();
+  localSearchService.refreshIndex();
+  const items = localSearchService.searchByTag(tag);
+  results.value = items.map(toSearchResult);
 }
 
 function searchCategory(id: string) {
-  uni.navigateTo({ url: `/pages/search/index?category=${id}` });
+  localSearchService.refreshIndex();
+  const items = localSearchService.searchByCategory(id);
+  results.value = items.map(toSearchResult);
+  searchText.value = categories.find(c => c.id === id)?.name || '';
 }
 
 function goDetail(id: string) {
   uni.navigateTo({ url: `/pages/work-detail/index?id=${id}` });
+}
+
+function toSearchResult(item: SearchableItem): SearchResult {
+  if (item.source === 'demo') {
+    const work = item.originalData as typeof demoWorks[0];
+    return {
+      _id: work._id,
+      title: work.title,
+      thumbnail: '',
+      pattern: work.pattern,
+      userInfo: work.userInfo,
+      tags: work.tags
+    };
+  }
+  const draft = item.originalData as DraftData;
+  return {
+    _id: draft._id,
+    title: draft.title,
+    thumbnail: '',
+    pattern: draft.pixels,
+    userInfo: { nickname: '我' },
+    tags: []
+  };
 }
 </script>
 

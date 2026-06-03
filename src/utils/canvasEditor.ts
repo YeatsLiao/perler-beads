@@ -9,8 +9,12 @@ export class CanvasEditor {
   private scale: number;
   private offsetX: number;
   private offsetY: number;
+  private _width: number;
+  private _height: number;
 
   constructor(options: EditorOptions) {
+    this._width = options.width;
+    this._height = options.height;
     this.pixels = Array(options.height).fill(null).map(() =>
       Array(options.width).fill(null)
     );
@@ -25,6 +29,34 @@ export class CanvasEditor {
 
   getPixels(): (string | null)[][] {
     return this.pixels;
+  }
+
+  getWidth(): number {
+    return this._width;
+  }
+
+  getHeight(): number {
+    return this._height;
+  }
+
+  getHistoryIndex(): number {
+    return this.historyIndex;
+  }
+
+  getHistoryLength(): number {
+    return this.history.length;
+  }
+
+  getCurrentColor(): string {
+    return this.currentColor;
+  }
+
+  loadPixels(pixels: (string | null)[][]): void {
+    this.pixels = JSON.parse(JSON.stringify(pixels));
+    this._height = pixels.length;
+    this._width = pixels[0]?.length || 0;
+    this.history = [JSON.parse(JSON.stringify(this.pixels))];
+    this.historyIndex = 0;
   }
 
   setTool(tool: ToolType) {
@@ -57,6 +89,36 @@ export class CanvasEditor {
         this.erasePixel(gridX, gridY);
         break;
     }
+  }
+
+  drawPixelDirect(x: number, y: number, color: string | null): void {
+    if (x < 0 || x >= this._width || y < 0 || y >= this._height) return;
+    this.pixels[y][x] = color;
+  }
+
+  commitDirect(): void {
+    this.saveHistory();
+  }
+
+  floodFillDirect(x: number, y: number, fillColor: string | null): void {
+    if (x < 0 || x >= this._width || y < 0 || y >= this._height) return;
+    const targetColor = this.pixels[y][x];
+    if (targetColor === fillColor) return;
+
+    const stack = [[x, y]];
+    while (stack.length > 0) {
+      const [cx, cy] = stack.pop()!;
+      if (cx < 0 || cx >= this._width || cy < 0 || cy >= this._height) continue;
+      if (this.pixels[cy][cx] !== targetColor) continue;
+      this.pixels[cy][cx] = fillColor;
+      stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+    }
+    this.saveHistory();
+  }
+
+  pickColorDirect(x: number, y: number): string | null {
+    if (x < 0 || x >= this._width || y < 0 || y >= this._height) return null;
+    return this.pixels[y][x];
   }
 
   private drawPixel(x: number, y: number) {
@@ -136,6 +198,8 @@ export class CanvasEditor {
       }
     }
     
+    this._width = width;
+    this._height = height;
     this.pixels = newPixels;
     this.saveHistory();
   }
